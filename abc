@@ -1,4 +1,192 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `gss`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+
+
+* * *
+
+## Part 1: Data
 
 After we look at the documentation for GSS data, we observe that multiple types of sampling has been used for different years. While quota sampling was used for a few years, full probability sampling and multi-stage sampling was used for other years.
 
-For simplicity, we will assume random sampling for all years and hence assume the condition of generalizability to US population. We can not infer any kind of causality as the sampling is not done through random assignment and the data collection process does not reflect an experimental study.
+For simplicity, we will assume random sampling for all years and hence assume the condition of generalizability to US population. We cannot infer any kind of causality as the sampling is not done through random assignment and the data collection process does not reflect an experimental study.
+
+
+* * *
+
+## Part 2: Research question
+
+The research questions described below are focused on the differences that exist regarding graduate education of Whites and Blacks. These questions focus on comparison of the proportion of graduates amongst these races and also try to observe how the proportion of graduates in these races has changed over time.
+
+**Research question 1:** 
+Is there a significant difference between the proportion of graduate white people vs. proportion of graduate black people in 2012?
+We would be interested in identifying differences in graduate degree holders between these two races.
+
+**Research question 2:**
+Is there a significant difference in proportion of black graduates in 2010 vs. black graduates in 2011?
+We can also observe the trend of proportion of black graduates over the years to get a better perspective how the proportion of graduate degree holders has improved or deteriorated for this race through time.
+
+
+**Research question 3:** 
+Is there a significant difference in proportion of white graduates in 2010 vs. white graduates in 2011?
+We can also observe the trend of proportion of white graduates over the years to get a better perspective how the proportion of graduate degree holders has improved or deteriorated for this race through time.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
+
+**Research question 1:** 
+
+```{r Q1}
+subset1_Q1 <- gss[gss$year == 2012 & gss$race != "Other", c("race", "degree", "caseid")]
+subset2_Q1 <- subset1_Q1[!is.na(subset1_Q1$race) & !is.na(subset1_Q1$degree),]
+subset2_Q1 <- subset2_Q1 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset2_Q1 <- subset2_Q1 %>%
+  mutate(race = ifelse(race == "Black" | race == "Other", "Black", "White"))
+
+
+# Creating a table for summary statistics
+grad_by_race <- table(subset2_Q1$race,subset2_Q1$degree_var)
+grad_by_race[1,] <- grad_by_race[1,]/nrow(subset2_Q1[subset2_Q1$race=="Black",]) 
+grad_by_race[2,] <- grad_by_race[2,]/nrow(subset2_Q1[subset2_Q1$race=="White",])
+grad_by_race
+
+# Creating a bar plot to visualize the results
+barplot(grad_by_race, 
+        main = "Proportion of Graduates by Race in 2012",
+        xlab = "Degree of Respondent", col = c("black", "red"), 
+        legend.text = rownames(grad_by_race), beside = TRUE, 
+        args.legend =  list(x= "topleft"))
+```
+
+From the above bar plot and summary statistics, we can observe that the proportion of Blacks who were graduates was about 7.94% whereas the proportion of Whites who had graduate degrees was about 10.57%.
+
+
+**Research question 2:** 
+
+```{r Q2}
+subset1_Q2 <- gss[(gss$year == 2012 | gss$year == 2010) & gss$race == "Black", c("year", "degree", "caseid", "race")]
+subset2_Q2 <- subset1_Q2[!is.na(subset1_Q2$degree),]
+subset2_Q2 <- subset2_Q2 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset2_Q2 <- subset2_Q2 %>%
+  mutate(race = ifelse(race == "Black", "Black", "Black"))
+
+
+# Creating a table for summary statistics
+grad_by_yearB <- table(subset2_Q2$year,subset2_Q2$degree_var)
+grad_by_yearB[1,] <- grad_by_yearB[1,]/nrow(subset2_Q2[subset2_Q2$year==2010,]) 
+grad_by_yearB[2,] <- grad_by_yearB[2,]/nrow(subset2_Q2[subset2_Q2$year==2012,])
+grad_by_yearB
+
+# Creating a bar plot to visualize the results
+barplot(grad_by_yearB, 
+        main = "Proportion of Black Graduates in 2010 vs. 2012",
+        xlab = "Degree of Respondent", col = c("blue", "green"), 
+        legend.text = rownames(grad_by_yearB), beside = TRUE, 
+        args.legend =  list(x= "topleft"))
+
+
+
+subset_all_Q2 <- gss[gss$race == "Black", c("race", "caseid", "degree", "year")]
+subset_all_Q2 <- subset_all_Q2[!is.na(subset_all_Q2$degree),]
+subset_all_Q2 <- subset_all_Q2 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset_all_Q2 <- subset_all_Q2 %>%
+  mutate(race = ifelse(race == "Black", "Black", "Black"))
+subset_all_Q2_summ <- merge(subset_all_Q2 %>% group_by(year, degree_var) %>% summarise(no_grad = n()),subset_all_Q2 %>% group_by(year) %>% summarise(no_grad = n()),"year")
+subset_all_Q2_summ$proportion <- subset_all_Q2_summ$no_grad.x/subset_all_Q2_summ$no_grad.y
+
+
+ggplot(data = subset_all_Q2_summ[subset_all_Q2_summ$degree_var == "Graduate",], 
+       aes(x = year, y = proportion)) + 
+  geom_point(size = 2, colour = "red" ) +  # add points at the ends, size = 2
+  geom_line() + 
+  ggtitle("Black graduates proportion across yearly samples") +
+  labs(y="Proportion of Graduates") 
+```
+
+**Research question 3:** 
+
+
+```{r Q3}
+subset1_Q3 <- gss[(gss$year == 2012 | gss$year == 2010) & gss$race == "White", c("year", "degree", "caseid", "race")]
+subset2_Q3 <- subset1_Q3[!is.na(subset1_Q3$degree),]
+subset2_Q3 <- subset2_Q3 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset2_Q3 <- subset2_Q3 %>%
+  mutate(race = ifelse(race == "White", "White", "White"))
+
+
+# Creating a table for summary statistics
+grad_by_yearW <- table(subset2_Q3$year,subset2_Q3$degree_var)
+grad_by_yearW[1,] <- grad_by_yearW[1,]/nrow(subset2_Q3[subset2_Q3$year==2010,]) 
+grad_by_yearW[2,] <- grad_by_yearW[2,]/nrow(subset2_Q3[subset2_Q3$year==2012,])
+grad_by_yearW
+
+# Creating a bar plot to visualize the results
+barplot(grad_by_yearW, 
+        main = "Proportion of White Graduates in 2010 vs. 2012",
+        xlab = "Degree of Respondent", col = c("blue", "green"), 
+        legend.text = rownames(grad_by_yearW), beside = TRUE, 
+        args.legend =  list(x= "topleft"))
+
+
+
+subset_all_Q3 <- gss[gss$race == "White", c("race", "caseid", "degree", "year")]
+subset_all_Q3 <- subset_all_Q3[!is.na(subset_all_Q3$degree),]
+subset_all_Q3 <- subset_all_Q3 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset_all_Q3 <- subset_all_Q3 %>%
+  mutate(race = ifelse(race == "White", "White", "White"))
+subset_all_Q3_summ <- merge(subset_all_Q3 %>% group_by(year, degree_var) %>% summarise(no_grad = n()),subset_all_Q3 %>% group_by(year) %>% summarise(no_grad = n()),"year")
+subset_all_Q3_summ$proportion <- subset_all_Q3_summ$no_grad.x/subset_all_Q3_summ$no_grad.y
+
+
+ggplot(data = subset_all_Q3_summ[subset_all_Q3_summ$degree_var == "Graduate",], 
+       aes(x = year, y = proportion)) + 
+  geom_point(size = 2, colour = "red" ) +  # add points at the ends, size = 2
+  geom_line() + 
+  ggtitle("White graduates proportion across yearly samples") +
+  labs(y="Proportion of Graduates") 
+```
+
+
+* * *
+
+## Part 4: Inference
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
