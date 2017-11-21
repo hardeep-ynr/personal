@@ -1,63 +1,74 @@
-install.packages("statsr")
-library(statsr)
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
 
-install.packages("devtools")
-library(devtools)
-devtools::install_github("statswithr/statsr")
+## Setup
 
-install_github("StatsWithR/statsr")
-library(devtools)
-install_version("statsr", "0.0.1")
+### Load packages
 
-library(devtools)
-install_github("cran/statsr")
+Loading the relevant packages.
 
-packageurl <- "http://cran.r-project.org/src/contrib/Archive/Statsr/Statsr_0.0.1.tar.gz"
-install.packages(packageurl, contriburl=NULL, type="source")
-
+```{r load-packages, message = FALSE}
 library(ggplot2)
-load("gss.Rdata")
-
-summary(gss[,1:10])
-
-summary(gss[,11:20])
-
-summary(gss[,21:40])
-
-range(gss$year)
-
 library(dplyr)
+library(statsr)
+```
 
-gss %>% group_by(.dots = names(gss)) %>% summarise(no_na = sum(educ, na.rm = TRUE))
+### Load data
 
-NA_cnt <- sapply(gss, function(x) sum(is.na(x)))
-NAs <- as.data.frame(NA_cnt)
-View(NAs[order(NAs),])
- <- names(gss)
+Loading the data for General Social Survey.
 
-summary(gss$marital)
-
-# education by sex, marital status, race
-
-gss %>% group_by(sex) %>% summarise(mean_ed = mean(educ, na.rm = TRUE))
-gss %>% group_by(race) %>% summarise(mean_ed = mean(educ, na.rm = TRUE))
-gss %>% group_by(marital) %>% summarise(mean_ed = mean(educ, na.rm = TRUE))
-hist(gss$educ)
-summary(gss$educ)
-range(gss$educ, na.rm = TRUE)
-sd(gss$educ, na.rm = TRUE)
-median(gss$)
-mean_ed <- mean(gss$educ, na.rm = TRUE)
-
-t_stat <- ((mean(gss$educ, na.rm = TRUE)-12.72)*sqrt(nrow(gss)-sum(is.na(gss$educ))))/sd(gss$educ, na.rm = TRUE)
-pt(t_stat, df =nrow(gss)-sum(is.na(gss$educ))-1)
-z_score <- qt(0.99,nrow(gss)-sum(is.na(gss$educ))-1)
-
-conf_up <- me
-
-qt()
+```{r load-data}
+load("gss.Rdata")
+```
 
 
+
+* * *
+
+## Part 1: Data
+
+After we look at the documentation for GSS data, we observe that multiple types of sampling has been used for different years. While quota sampling was used for a few years, full probability sampling and multi-stage sampling was used for other years.
+
+For simplicity, we will assume random sampling for all years and hence assume the condition of generalizability to US population. We cannot infer any kind of causality as the sampling is not done through random assignment and the data collection process does not reflect an experimental study.
+
+During a couple of years, the population of black people in the sample was proportionately large when compared to other years. This can be resolved by appropriate weighting. If used without weighting, it might be a cause for bias.
+
+
+* * *
+
+## Part 2: Research question
+
+The research questions described below are focused on the differences that exist regarding graduate education of Whites and Blacks. These questions focus on comparison of the proportion of graduates amongst these races and also try to observe how the proportion of graduates in these races has changed over time.
+
+**Research question 1:** 
+Is there a significant difference between the proportion of graduate white people vs. proportion of graduate black people in 2012?
+We would be interested in identifying differences in graduate degree holders between these two races.
+
+**Research question 2:**
+Is there a significant difference in proportion of black graduates in 2010 vs. black graduates in 2011? this proprtion is calculated based on the total black population (in the sample) in the year.
+We can also observe the trend of proportion of black graduates over the years to get a better perspective how the proportion of graduate degree holders has improved or deteriorated for this race through time.
+
+
+**Research question 3:** 
+Is there a significant difference in proportion of white graduates in 2010 vs. white graduates in 2011? This proportion is calculated based on the total white population (in the sample) in the year.
+We can also observe the trend of proportion of white graduates over the years to get a better perspective how the proportion of graduate degree holders has improved or deteriorated for this race through time.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+Now, we perform exploratory data analysis for the research questions formulated.
+
+
+**Research question 1:** 
+
+```{r Q1}
 subset1_Q1 <- gss[gss$year == 2012 & gss$race != "Other", c("race", "degree", "caseid")]
 subset2_Q1 <- subset1_Q1[!is.na(subset1_Q1$race) & !is.na(subset1_Q1$degree),]
 subset2_Q1 <- subset2_Q1 %>%
@@ -78,8 +89,14 @@ barplot(grad_by_race,
         xlab = "Degree of Respondent", col = c("black", "red"), 
         legend.text = rownames(grad_by_race), beside = TRUE, 
         args.legend =  list(x= "topleft"))
+```
+
+From the above bar plot and summary statistics, we can observe that the proportion of Blacks who had graduate degrees was about 8.0% whereas the proportion of Whites who had graduate degrees was about 10.6% in 2012. We will see if this is a significant difference in the section on inference.
 
 
+**Research question 2:** 
+
+```{r Q2}
 subset1_Q2 <- gss[(gss$year == 2012 | gss$year == 2010) & gss$race == "Black", c("year", "degree", "caseid", "race")]
 subset2_Q2 <- subset1_Q2[!is.na(subset1_Q2$degree),]
 subset2_Q2 <- subset2_Q2 %>%
@@ -119,3 +136,58 @@ ggplot(data = subset_all_Q2_summ[subset_all_Q2_summ$degree_var == "Graduate",],
   geom_line() + 
   ggtitle("Black graduates proportion across yearly samples") +
   labs(y="Proportion of Graduates") 
+```
+
+**Research question 3:** 
+
+
+```{r Q3}
+subset1_Q3 <- gss[(gss$year == 2012 | gss$year == 2010) & gss$race == "White", c("year", "degree", "caseid", "race")]
+subset2_Q3 <- subset1_Q3[!is.na(subset1_Q3$degree),]
+subset2_Q3 <- subset2_Q3 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset2_Q3 <- subset2_Q3 %>%
+  mutate(race = ifelse(race == "White", "White", "White"))
+
+
+# Creating a table for summary statistics
+grad_by_yearW <- table(subset2_Q3$year,subset2_Q3$degree_var)
+grad_by_yearW[1,] <- grad_by_yearW[1,]/nrow(subset2_Q3[subset2_Q3$year==2010,]) 
+grad_by_yearW[2,] <- grad_by_yearW[2,]/nrow(subset2_Q3[subset2_Q3$year==2012,])
+grad_by_yearW
+
+# Creating a bar plot to visualize the results
+barplot(grad_by_yearW, 
+        main = "Proportion of White Graduates in 2010 vs. 2012",
+        xlab = "Degree of Respondent", col = c("blue", "green"), 
+        legend.text = rownames(grad_by_yearW), beside = TRUE, 
+        args.legend =  list(x= "topleft"))
+
+
+
+subset_all_Q3 <- gss[gss$race == "White", c("race", "caseid", "degree", "year")]
+subset_all_Q3 <- subset_all_Q3[!is.na(subset_all_Q3$degree),]
+subset_all_Q3 <- subset_all_Q3 %>%
+  mutate(degree_var = ifelse(degree == "Graduate", "Graduate", "Non-Graduate"))
+subset_all_Q3 <- subset_all_Q3 %>%
+  mutate(race = ifelse(race == "White", "White", "White"))
+subset_all_Q3_summ <- merge(subset_all_Q3 %>% group_by(year, degree_var) %>% summarise(no_grad = n()),subset_all_Q3 %>% group_by(year) %>% summarise(no_grad = n()),"year")
+subset_all_Q3_summ$proportion <- subset_all_Q3_summ$no_grad.x/subset_all_Q3_summ$no_grad.y
+
+
+ggplot(data = subset_all_Q3_summ[subset_all_Q3_summ$degree_var == "Graduate",], 
+       aes(x = year, y = proportion)) + 
+  geom_point(size = 2, colour = "red" ) +  # add points at the ends, size = 2
+  geom_line() + 
+  ggtitle("White graduates proportion across yearly samples") +
+  labs(y="Proportion of Graduates") 
+```
+
+
+* * *
+
+## Part 4: Inference
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
