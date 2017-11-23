@@ -96,7 +96,7 @@ From the above bar plot and summary statistics, we can observe that the proporti
 
 **Research question 2:** 
 
-```{r Q2}
+```{r Q2_1}
 subset1_Q2 <- gss[(gss$year == 2012 | gss$year == 2010) & gss$race == "Black", c("year", "degree", "caseid", "race")]
 subset2_Q2 <- subset1_Q2[!is.na(subset1_Q2$degree),]
 subset2_Q2 <- subset2_Q2 %>%
@@ -117,8 +117,12 @@ barplot(grad_by_yearB,
         xlab = "Degree of Respondent", col = c("blue", "green"), 
         legend.text = rownames(grad_by_yearB), beside = TRUE, 
         args.legend =  list(x= "topleft"))
+```
+
+When we see the summary statistics and bar plot above, we see that the proportion of graduate degree holders in the samples of Black people rose from 6.5% in 2010 to 8% in 2012. We will observe the statistical significance of this difference in the section on inference.
 
 
+```{r Q2_2}
 
 subset_all_Q2 <- gss[gss$race == "Black", c("race", "caseid", "degree", "year")]
 subset_all_Q2 <- subset_all_Q2[!is.na(subset_all_Q2$degree),]
@@ -129,7 +133,6 @@ subset_all_Q2 <- subset_all_Q2 %>%
 subset_all_Q2_summ <- merge(subset_all_Q2 %>% group_by(year, degree_var) %>% summarise(no_grad = n()),subset_all_Q2 %>% group_by(year) %>% summarise(no_grad = n()),"year")
 subset_all_Q2_summ$proportion <- subset_all_Q2_summ$no_grad.x/subset_all_Q2_summ$no_grad.y
 
-
 ggplot(data = subset_all_Q2_summ[subset_all_Q2_summ$degree_var == "Graduate",], 
        aes(x = year, y = proportion)) + 
   geom_point(size = 2, colour = "red" ) +  # add points at the ends, size = 2
@@ -138,10 +141,13 @@ ggplot(data = subset_all_Q2_summ[subset_all_Q2_summ$degree_var == "Graduate",],
   labs(y="Proportion of Graduates") 
 ```
 
+Looking at the line chart above, we see that the proportion of black graduate degree holders has been increasing over the years as a proportion of black people in the sample.
+
+
 **Research question 3:** 
 
 
-```{r Q3}
+```{r Q3_1}
 subset1_Q3 <- gss[(gss$year == 2012 | gss$year == 2010) & gss$race == "White", c("year", "degree", "caseid", "race")]
 subset2_Q3 <- subset1_Q3[!is.na(subset1_Q3$degree),]
 subset2_Q3 <- subset2_Q3 %>%
@@ -162,9 +168,13 @@ barplot(grad_by_yearW,
         xlab = "Degree of Respondent", col = c("blue", "green"), 
         legend.text = rownames(grad_by_yearW), beside = TRUE, 
         args.legend =  list(x= "topleft"))
+```
 
+In the above bar plot, we observe that the proporition of graduate degree holders in the White people in the sample has decreased from 11.4% in 2010 to 10.6% in 2012. This is quite contrary to what we expect in a developed economy like US.
 
+Let us now see what does the trend of the proportion looks like.
 
+```{r Q3_2}
 subset_all_Q3 <- gss[gss$race == "White", c("race", "caseid", "degree", "year")]
 subset_all_Q3 <- subset_all_Q3[!is.na(subset_all_Q3$degree),]
 subset_all_Q3 <- subset_all_Q3 %>%
@@ -183,11 +193,37 @@ ggplot(data = subset_all_Q3_summ[subset_all_Q3_summ$degree_var == "Graduate",],
   labs(y="Proportion of Graduates") 
 ```
 
+We see that, barring a few years, the proportion of graduate degree holders among White people has been on an upward trend. There was a notable fall in the years 1975 and 1991 and it can be due to sampling variability or some phenomena which may be peculiar to those years.
+
 
 * * *
 
 ## Part 4: Inference
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button (green button with orange arrow) above. Make sure that your code is visible
-in the project you submit. Delete this note when before you submit your work.
+The first hypothesis test we can conduct is regarding the difference observed in the proportion of graduate degree holders among the White people vs. among the Black people in the year 2012.
+
+Let H0: There is no difference between these proportions, pW - pB = 0
+Let Ha: There is a difference between these proportions, pW - pB != 0
+
+This is a two-sample hypothesis test.
+
+We need to identify if the assumptions for this test are met before conducting the test:
+*1. Assumption 1: The observations are randomly selected*
+We know that the data is randomly sampled and hence, this assumption is met.
+
+
+
+The inference can be performed using a hypothesis test as shown below:
+
+```{r H1_1}
+
+```
+
+
+We can also construct a confidence interval for the difference in these two proportions
+
+```{r H1_2}
+
+```
+
+
